@@ -1,0 +1,61 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <script src="./jquery-3.2.0.min.js" type="text/javascript"></script>
+    <script type="text/javascript">
+
+class Messages {
+  constructor() {
+        this.ws = new WebSocket("ws://localhost:3001");
+
+        this.ws.onmessage = (event) => {
+
+          var jsonm=JSON.parse(event.data);
+
+          var bef = $('#messages-ter').html();
+          var beep = "\n<li>\n<p>Name: " + jsonm.name + "</p>\n<p>Time: " + jsonm.date + " </p>\n<p style="+'"' + 'color:' + jsonm.color +  ';"' + ">Message: " + jsonm.msg + " </p>\n</li>"
+
+          $('#messages-ter').html(bef + beep);
+
+        };
+  }
+
+  on_send(event) {
+      var name = $('#name').val();
+      var msg = $('#msg').val();
+      var color = $('#color').val();
+      var date = new Date();
+      var obj = {'name':name, 'msg':msg, 'date':date, 'color':color};
+
+      console.log(color);
+      this.ws.send(JSON.stringify(obj));
+  }
+}
+
+var messages;
+//When this file is fully loaded, initialize board with context
+$(document).ready(function(){
+  messages = new Messages($('#messages-ter'));
+
+  $('#send').click((event) => {
+    console.log("hei");
+    messages.on_send(event);
+  });
+});
+
+    </script>
+  </head>
+  <body>
+    name: <input type="text" id="name" value="Taco">
+    <br />
+    Message: <input type="text" id="msg" value="Hei">
+    <input type="color" id="color">
+    <button id="send">Send</button>
+    <ul id="messages-ter">
+    </ul>
+
+    <div id="connection_label">
+      Connecting...
+    </div>
+  </body>
+</html>
