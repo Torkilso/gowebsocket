@@ -51,27 +51,29 @@ func startWss() {
 }
 
 // Handles incoming requests.
-func handler(conn net.Conn) {
-	handshake(conn)
+func handler(client net.Conn) {
+	handshake(client)
 
 	//for loop? hvis alle skal ha hver sin traad
-
-	conn.Close()
+	p()
+	client.Close()
 }
 
 func handshake(client net.Conn) {
-	var key = parseKey(client)
+	key, found := parseKey(client)
 
-	if (key == "false") {
+	if !found {
 		reject(client)
 		return
 	}
 
-	p(key)
 
+
+	p(key)
+	return
 }
 
-func parseKey(client net.Conn) string {
+func parseKey(client net.Conn) (string, bool) {
 	bufReader := bufio.NewReader(client)
 	tp := textproto.NewReader(bufReader)
 
@@ -80,7 +82,7 @@ func parseKey(client net.Conn) string {
 	var keyFound bool
 
 	for {
-		var line, _ = tp.ReadLine()
+		line, _ := tp.ReadLine()
 		headers = append(headers, line)
 
 		if line == "" {
@@ -95,7 +97,7 @@ func parseKey(client net.Conn) string {
 			p(errKey)
 		}
 		if matchKey {
-			if (len(s) > 1) {
+			if len(s) > 1 {
 				keyFound = true
 				key = s[1]
 			}
@@ -103,14 +105,14 @@ func parseKey(client net.Conn) string {
 	}
 
 	if keyFound {
-		return key
+		return key, true
 	} else {
-		return "false"
+		return "", false
 	}
 }
 
 func reject(client net.Conn) {
-	var reject = "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nIncorrect request"
+	reject := "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nIncorrect request"
 	client.Write([]byte(reject))
 	client.Close();
 }
