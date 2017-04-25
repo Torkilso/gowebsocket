@@ -17,6 +17,7 @@ unregister chan * ws_conn
 
 var (
 
+	//required features of an http request the initial handshake?? or is this the 2nd
 	hsHead = map[string] bool {
 		"Host": true,
 		"Upgrade":true,
@@ -30,7 +31,20 @@ var (
 )
 
 
+/*
+The main socket struct needs?
+http switching protocols / upgrade
+match bytes from key [MAGIC STRING]
+handle new connection
+handle data from connection
+handle data from connections
+handle connection closed
+
+
+ */
 type go_sokk struct {
+
+
 
 }
 
@@ -47,7 +61,7 @@ type ws_c_i interface {
 }
 
 //does this need to return anything?
-func (w *go_sokk) ws_handshake(reader *bufio.Reader, request * http.Request) (code int){
+func (w *go_sokk) ws_handshake(reader *bufio.Reader, request * http.Request) (code int){ // statuscode
 
 	//check for HTTP GET method
 	if request.Method != "GET"{
@@ -66,7 +80,9 @@ func (w *go_sokk) ws_handshake(reader *bufio.Reader, request * http.Request) (co
 	if key == "" || key == " " || len(key) > 8 {   //TODO check number of bytes to be length of key? 16/32/69
 		return http.StatusBadRequest
 	}
-	//TODO implement check or case/switch for Sec-WebSocket-Version ?? [13]
+	//TODO implement check or case/switch for Sec-WebSocket-Version ?? [13] IS THIS REQUIRED??!
 
 
+	//TODO lag base-64 SHA1 res
+	return http.StatusSwitchingProtocols // changing to websocket protocol
 }
