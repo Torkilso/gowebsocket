@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 	"bufio"
-	"net/textproto"
-	"regexp"
-	"strings"
+	//"net/textproto"
+	//"regexp"
+	//"strings"
 )
 
 func main() {
@@ -53,62 +53,35 @@ func startWss() {
 // Handles incoming requests.
 func handler(client net.Conn) {
 	handshake(client)
-
-	//for loop? hvis alle skal ha hver sin traad
-	p()
-	client.Close()
 }
 
 func handshake(client net.Conn) {
-	key, found := parseKey(client)
+	status, key := parseKey(client)
+  if status != 101 {
+    //reject
+    reject(client)
+  } else {
+    //Complete handshake
 
-	if !found {
-		reject(client)
-		return
-	}
+    p(key)
 
-
-
-	p(key)
-	return
+  }
 }
 
-func parseKey(client net.Conn) (string, bool) {
-	bufReader := bufio.NewReader(client)
-	tp := textproto.NewReader(bufReader)
+func parseKey(client net.Conn)(code int, k string) {
+  bufReader := bufio.NewReader(client)
+  request, err := http.ReadRequest(bufReader)
 
-	var headers []string
-	var key string
-	var keyFound bool
+  if err != nil {
+      p(err)
+  }
 
-	for {
-		line, _ := tp.ReadLine()
-		headers = append(headers, line)
-
-		if line == "" {
-			break
-		}
-	}
-
-	for i := 0; i < len(headers); i++ {
-		s := strings.Split(headers[i], ": ")
-		matchKey, errKey := regexp.MatchString(s[0], "Sec-WebSocket-Key")
-		if errKey != nil {
-			p(errKey)
-		}
-		if matchKey {
-			if len(s) > 1 {
-				keyFound = true
-				key = s[1]
-			}
-		}
-	}
-
-	if keyFound {
-		return key, true
+  if request.Header.Get("Upgrade") != "websocket" {
+		return http.StatusBadRequest, ""
 	} else {
-		return "", false
-	}
+    key := request.Header.Get("Sec-Websocket-Key")
+    return http.StatusSwitchingProtocols, key
+  }
 }
 
 func reject(client net.Conn) {
