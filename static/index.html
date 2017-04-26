@@ -9,12 +9,12 @@ class Messages {
         this.ws = new WebSocket("ws://localhost:3001");
 
         this.ws.onmessage = (event) => {
+            console.log(event)
 
           var jsonm=JSON.parse(event.data);
 
           var bef = $('#messages-ter').html();
-          var beep = "\n<li>\n<p>Name: " + jsonm.name + "</p>\n<p>Time: " + jsonm.date + " </p>\n<p style="+'"' + 'color:' + jsonm.color +  ';"' + ">Message: " + jsonm.msg + " </p>\n</li>"
-
+          var beep = "\n<li>\n<p>Res: " + jsonm.name
           $('#messages-ter').html(bef + beep);
 
         };
@@ -34,12 +34,12 @@ class Messages {
 
   on_send(event) {
       var name = $('#name').val();
-      var msg = $('#msg').val();
+      /*var msg = $('#msg').val();
       var color = $('#color').val();
-      var date = new Date();
-      var obj = {'name':name, 'msg':msg, 'date':date, 'color':color};
+      var date = new Date();*/
+      var obj = {'name':name};//, 'msg':msg, 'date':date, 'color':color};
 
-      console.log(color);
+      //console.log(color);
       this.ws.send(JSON.stringify(obj));
   }
 }
@@ -58,11 +58,13 @@ $(document).ready(function(){
     </script>
   </head>
   <body>
-    name: <input type="text" id="name" value="Taco">
+    <!--name: <input type="text" id="name" value="Taco">
     <br />
     Message: <input type="text" id="msg" value="Hei">
     <input type="color" id="color">
-    <button id="send">Send</button>
+    <button id="send">Send</button>-->
+    <input type = "text" id="name">
+    <button id="send">Respect the send</button>
     <ul id="messages-ter">
     </ul>
 
