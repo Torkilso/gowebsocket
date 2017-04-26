@@ -16,7 +16,8 @@ import (
 
 func main() {
 	go startWss()
-
+	//k := hand("dGhlIHNhbXBsZSBub25jZQ==" + magic_server_key)
+	//fmt.Println(k)
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 	http.ListenAndServe(":3000", nil)
 }
@@ -27,6 +28,9 @@ const (
 	CONN_TYPE = "tcp"
 	magic_server_key = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 )
+type web_sokker struct {
+	//map[]
+}
 
 var p = fmt.Println
 
@@ -37,10 +41,8 @@ func startWss() {
 		p("Error listening:", err.Error())
 		os.Exit(1)
 	}
-
 	//Executed when the application closes.
 	defer listener.Close()
-
 	p("Listening on " + CONN_HOST + ":" + CONN_PORT)
 	for {
 		// Listen for an incoming connection.
@@ -58,6 +60,22 @@ func startWss() {
 func handler(client net.Conn) {
 	handshake(client)
 }
+func hand(str string)(keyz string){
+	h:=sha1.New()
+	h.Write([]byte(str))
+	keyz = base64.StdEncoding.EncodeToString(h.Sum(nil))
+	return
+}
+
+func recv_data(client net.Conn){
+	p("LISTEN TO recv_data")
+
+	for{
+		message, _ := bufio.NewReader(client).ReadString('\n')
+		fmt.Print("Message Received:", string(message))
+		client.Write([]byte(message + "\n"))
+	}
+}
 
 func handshake(client net.Conn) {
 	status, key := parseKey(client)
@@ -66,10 +84,7 @@ func handshake(client net.Conn) {
 		reject(client)
 	} else {
 		//Complete handshake
-		magic_server_key := "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-		h := sha1.New()
-		h.Write([]byte(key + magic_server_key))
-		t := base64.URLEncoding.EncodeToString(h.Sum(nil))
+		var t = hand(key + magic_server_key)
 		var buff bytes.Buffer
 		buff.WriteString("HTTP/1.1 101 Switching Protocols\r\n")
 		buff.WriteString("Connection: Upgrade\r\n")
@@ -78,18 +93,16 @@ func handshake(client net.Conn) {
 		buff.WriteString(t + "\r\n\r\n")
 		client.Write(buff.Bytes())
 		p(key)
-
+		recv_data(client)
 	}
 }
 
 func parseKey(client net.Conn) (code int, k string) {
 	bufReader := bufio.NewReader(client)
 	request, err := http.ReadRequest(bufReader)
-
 	if err != nil {
 		p(err)
 	}
-
 	if request.Header.Get("Upgrade") != "websocket" {
 		return http.StatusBadRequest, ""
 	} else {
@@ -101,26 +114,6 @@ func parseKey(client net.Conn) (code int, k string) {
 func reject(client net.Conn) {
 	reject := "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nIncorrect request"
 	client.Write([]byte(reject))
-	client.Close();
+	//client.Close();
 }
 
-func validate_key(key string) (code []byte) {
-	h := sha1.New()
-	h.Write([]byte(key))
-	h.Write([]byte(magic_server_key))
-	code = make([]byte, 28)
-	base64.StdEncoding.Encode(code, h.Sum(nil))
-	return
-}
-
-func switch_pc(conn net.Conn, key string) { // TODO -> check if buffwriter is better?
-	var buff bytes.Buffer
-	buff.WriteString("HTTP/1.1 101 Switching Protocols\r\n")
-	buff.WriteString("Connection: Upgrade\r\n")
-	buff.WriteString("Upgrade: websocket\r\n")
-	buff.WriteString("Sec-WebSocket-Accept:")
-	buff.Write(validate_key(key))
-	buff.WriteString("\r\n\r\n")
-	conn.Write(buff.Bytes())
-
-}
