@@ -74,7 +74,7 @@ func handshake(client net.Conn) {
   	buff.WriteString("Connection: Upgrade\r\n")
   	buff.WriteString("Upgrade: websocket\r\n")
   	buff.WriteString("Sec-WebSocket-Accept:")
-  	buff.WriteString(t + "\r\n")
+  	buff.WriteString(t + "\r\n\r\n")
   	client.Write(buff.Bytes())
     p(key)
 
