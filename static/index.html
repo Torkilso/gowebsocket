@@ -18,6 +18,18 @@ class Messages {
           $('#messages-ter').html(bef + beep);
 
         };
+
+        this.ws.onerror = (error) => {
+          $("#connection_label").html("Not connected");
+        };
+
+        this.ws.onopen = () => {
+          $("#connection_label").html("Connected");
+        };
+
+        this.ws.onclose = function(message) {
+          $("#connection_label").html("Not connected");
+        };
   }
 
   on_send(event) {
