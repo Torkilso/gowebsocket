@@ -102,3 +102,24 @@ func reject(client net.Conn) {
 	client.Write([]byte(reject))
 	client.Close();
 }
+
+func validate_key(key string) (code[]byte){
+	h := sha1.New()
+	h.Write([]byte(key))
+	h.Write([]byte(magic_server_key))
+	code = make([]byte,28)
+	base64.StdEncoding.Encode(code, h.Sum(nil))
+	return
+}
+
+func switch_pc(conn net.Conn, key string){ // TODO -> check if buffwriter is better?
+	var buff bytes.Buffer
+	buff.WriteString("HTTP/1.1 101 Switching Protocols\r\n")
+	buff.WriteString("Connection: Upgrade\r\n")
+	buff.WriteString("Upgrade: websocket\r\n")
+	buff.WriteString("Sec-WebSocket-Accept:")
+	buff.Write(validate_key(key))
+	buff.WriteString("\r\n\r\n")
+	conn.Write(buff.Bytes())
+
+}
