@@ -41,10 +41,8 @@ func startWss() {
 		p("Error listening:", err.Error())
 		os.Exit(1)
 	}
-
 	//Executed when the application closes.
 	defer listener.Close()
-
 	p("Listening on " + CONN_HOST + ":" + CONN_PORT)
 	for {
 		// Listen for an incoming connection.
@@ -69,6 +67,16 @@ func hand(str string)(keyz string){
 	return
 }
 
+func recv_data(client net.Conn){
+	p("LISTEN TO recv_data")
+
+	for{
+		message, _ := bufio.NewReader(client).ReadString('\n')
+		fmt.Print("Message Received:", string(message))
+		client.Write([]byte(message + "\n"))
+	}
+}
+
 func handshake(client net.Conn) {
 	status, key := parseKey(client)
 	if status != 101 {
@@ -85,19 +93,16 @@ func handshake(client net.Conn) {
 		buff.WriteString(t + "\r\n\r\n")
 		client.Write(buff.Bytes())
 		p(key)
-
-
+		recv_data(client)
 	}
 }
 
 func parseKey(client net.Conn) (code int, k string) {
 	bufReader := bufio.NewReader(client)
 	request, err := http.ReadRequest(bufReader)
-
 	if err != nil {
 		p(err)
 	}
-
 	if request.Header.Get("Upgrade") != "websocket" {
 		return http.StatusBadRequest, ""
 	} else {
