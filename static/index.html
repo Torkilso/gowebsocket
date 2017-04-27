@@ -11,11 +11,11 @@ class Messages {
         this.ws.onmessage = (event) => {
             console.log(event)
 
-          var jsonm=JSON.parse(event.data);
+          //var jsonm=JSON.parse(event.data);
 
-          var bef = $('#messages-ter').html();
-          var beep = "\n<li>\n<p>Res: " + jsonm.name
-          $('#messages-ter').html(bef + beep);
+          //var bef = $('#messages-ter').html();
+          //var beep = "\n<li>\n<p>Res: " + jsonm.name
+          //$('#messages-ter').html(bef + beep);
 
         };
 
@@ -50,7 +50,6 @@ $(document).ready(function(){
   messages = new Messages($('#messages-ter'));
 
   $('#send').click((event) => {
-    console.log("hei");
     messages.on_send(event);
   });
 });
@@ -64,8 +63,8 @@ $(document).ready(function(){
     <input type="color" id="color">
     <button id="send">Send</button>-->
     <input type = "text" id="name">
-    <button id="send">Respect the send</button>
-    <ul id="messages-ter">
+    <button id="send">Send</button>
+    <ul id="messagebox">
     </ul>
 
     <div id="connection_label">

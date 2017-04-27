@@ -9,93 +9,26 @@ import (
 	"bytes"
 	"encoding/base64"
 	"crypto/sha1"
-	//"net/textproto"
-	//"regexp"
-	//"strings"
+  //"runtime"
 )
-
-func main() {
-	go startWss()
-	//k := hand("dGhlIHNhbXBsZSBub25jZQ==" + magic_server_key)
-	//fmt.Println(k)
-	http.Handle("/", http.FileServer(http.Dir("./static")))
-	http.ListenAndServe(":3000", nil)
-}
 
 const (
 	CONN_HOST = "localhost"
 	CONN_PORT = "3001"
 	CONN_TYPE = "tcp"
 	magic_server_key = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+  msg_length = 128
 )
-type web_sokker struct {
-	//map[]
-}
 
 var p = fmt.Println
 
-func startWss() {
-	p("Listen for incoming connections.")
-	listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
-	if err != nil {
-		p("Error listening:", err.Error())
-		os.Exit(1)
-	}
-	//Executed when the application closes.
-	defer listener.Close()
-	p("Listening on " + CONN_HOST + ":" + CONN_PORT)
-	for {
-		// Listen for an incoming connection.
-		conn, err := listener.Accept()
-		if err != nil {
-			p("Error accepting: ", err.Error())
-			os.Exit(1)
-		}
-		// Handle connections in a new thread (goroutine)
-		go handler(conn)
-	}
-}
-
 // Handles incoming requests.
-func handler(client net.Conn) {
-	handshake(client)
-}
+
 func hand(str string)(keyz string){
 	h:=sha1.New()
 	h.Write([]byte(str))
 	keyz = base64.StdEncoding.EncodeToString(h.Sum(nil))
 	return
-}
-
-func recv_data(client net.Conn){
-	p("LISTEN TO recv_data")
-	reply := make([]byte, 32)
-	client.Read(reply)
-	decoded := decode(reply)
-	fmt.Println("Message Received:", decoded)
-	client.Write(reply)
-	//client.Close()
-
-}
-
-func handshake(client net.Conn) {
-	status, key := parseKey(client)
-	if status != 101 {
-		//reject
-		reject(client)
-	} else {
-		//Complete handshake
-		var t = hand(key + magic_server_key)
-		var buff bytes.Buffer
-		buff.WriteString("HTTP/1.1 101 Switching Protocols\r\n")
-		buff.WriteString("Connection: Upgrade\r\n")
-		buff.WriteString("Upgrade: websocket\r\n")
-		buff.WriteString("Sec-WebSocket-Accept:")
-		buff.WriteString(t + "\r\n\r\n")
-		client.Write(buff.Bytes())
-		p(key)
-		recv_data(client)
-	}
 }
 
 func parseKey(client net.Conn) (code int, k string) {
@@ -115,7 +48,7 @@ func parseKey(client net.Conn) (code int, k string) {
 func reject(client net.Conn) {
 	reject := "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nIncorrect request"
 	client.Write([]byte(reject))
-	//client.Close();
+	client.Close();
 }
 
 //Funnet på nett
@@ -136,8 +69,22 @@ func decode (rawBytes []byte) string {
 	}
 
 	masks := rawBytes[idxMask:idxMask + 4]
-	data := rawBytes[idxMask + 4:len(rawBytes)]
-	decoded := make([]byte, len(rawBytes) - idxMask + 4)
+
+  first := 6
+
+  for r := range rawBytes{
+    if rawBytes[r] == 0 {
+      first = r
+      break
+    }
+  }
+
+  if first < 6 {
+    first = 6
+  }
+
+  data := rawBytes[idxMask + 4:first]
+	decoded := make([]byte, len(data))
 
 	for i, b := range data {
 		decoded[i] = b ^ masks[i % 4]
@@ -181,5 +128,89 @@ func encode (message string) (result []byte) {
 	for i, b := range rawBytes {
 		result[idxData+i] = b
 	}
-	return
+	return result
+}
+
+func handshake(client net.Conn) bool {
+	status, key := parseKey(client)
+	if status != 101 {
+		//reject
+		reject(client)
+    return false
+	} else {
+		//Complete handshake
+		var t = hand(key + magic_server_key)
+		var buff bytes.Buffer
+		buff.WriteString("HTTP/1.1 101 Switching Protocols\r\n")
+		buff.WriteString("Connection: Upgrade\r\n")
+		buff.WriteString("Upgrade: websocket\r\n")
+		buff.WriteString("Sec-WebSocket-Accept:")
+		buff.WriteString(t + "\r\n\r\n")
+		client.Write(buff.Bytes())
+    return true
+	}
+}
+
+func handleIncomingMsg() {
+
+}
+
+
+
+func handler(client net.Conn) {
+	isWeb := handshake(client)
+  if(isWeb){
+    for {
+      reply := make([]byte, 32)
+      client.Read(reply)
+
+
+      c := fmt.Sprintf("%08b", byte(reply[0]))
+      if c[4:len(c)] == "1000" {
+        client.Close()
+        break
+      }
+
+      p(reply)
+
+      decoded := decode(reply)
+      enc := encode(decoded)
+
+      p(decoded)
+      p(enc)
+      client.Write(enc)
+    }
+  }
+}
+
+func startWss() {
+	listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
+
+	if err != nil {
+		p("Error listening:", err.Error())
+		os.Exit(1)
+	}
+	//Executed when the application closes.
+	defer listener.Close()
+
+	p("Listening on " + CONN_HOST + ":" + CONN_PORT)
+
+	for {
+		// Listen for an incoming connection.
+		conn, err := listener.Accept()
+		if err != nil {
+			p("Error accepting: ", err.Error())
+			os.Exit(1)
+		}
+		// Handle connections in a new thread (goroutine)
+		go handler(conn)
+	}
+}
+
+func main() {
+  fmt.Sprintf("0%8b", byte(1))
+	go startWss()
+
+	http.Handle("/", http.FileServer(http.Dir("./static")))
+	http.ListenAndServe(":3000", nil)
 }
