@@ -24,10 +24,10 @@ var p = fmt.Println
 
 // Handles incoming requests.
 
-func hand(str string)(keyz string){
+func hand(str string)(key string){
 	h:=sha1.New()
 	h.Write([]byte(str))
-	keyz = base64.StdEncoding.EncodeToString(h.Sum(nil))
+	key = base64.StdEncoding.EncodeToString(h.Sum(nil))
 	return
 }
 
@@ -151,37 +151,63 @@ func handshake(client net.Conn) bool {
 	}
 }
 
-func handleIncomingMsg() {
+func handleIncomingMsg(msg []byte, client net.Conn) {
+  c := fmt.Sprintf("%08b", byte(msg[0]))
+  if c[4:len(c)] == "1000" {
+    closeConn(client)
+  }
+
+  decoded := decode(msg)
+  enc := encode(decoded)
+
+  writeToAll(enc)
+}
+
+func writeToAll(msg []byte) {
+  for i := range clients {
+    clients[i].Write(msg)
+  }
+}
+
+func closeConn(client net.Conn) {
+
+  for i := range clients {
+    if clients[i] == client {
+      clients = clients[:i + copy(clients[i:], clients[i+1:])]
+      client.Close()
+      break
+    }
+  }
+
+  client.Close()
 
 }
 
-
-
 func handler(client net.Conn) {
-	isWeb := handshake(client)
-  if(isWeb){
+	verified := handshake(client)
+  if(verified){
+
+    clients = append(clients, client)
+
     for {
-      reply := make([]byte, 32)
-      client.Read(reply)
+      msg := make([]byte, 32)
+      client.Read(msg)
 
-
-      c := fmt.Sprintf("%08b", byte(reply[0]))
+      c := fmt.Sprintf("%08b", byte(msg[0]))
       if c[4:len(c)] == "1000" {
-        client.Close()
+        closeConn(client)
         break
       }
 
-      p(reply)
-
-      decoded := decode(reply)
+      decoded := decode(msg)
       enc := encode(decoded)
 
-      p(decoded)
-      p(enc)
-      client.Write(enc)
+      writeToAll(enc)
     }
   }
 }
+
+var clients = make([]net.Conn, 0)
 
 func startWss() {
 	listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
