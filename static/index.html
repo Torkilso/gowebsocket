@@ -40,7 +40,7 @@ class Messages {
       var obj = {'name':name};//, 'msg':msg, 'date':date, 'color':color};
 
       //console.log(color);
-      this.ws.send(JSON.stringify(obj));
+      this.ws.send(name);
   }
 }
 
