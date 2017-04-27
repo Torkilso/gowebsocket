@@ -35,7 +35,7 @@ type web_sokker struct {
 var p = fmt.Println
 
 func startWss() {
-	// Listen for incoming connections.
+	p("Listen for incoming connections.")
 	listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 	if err != nil {
 		p("Error listening:", err.Error())
@@ -69,12 +69,13 @@ func hand(str string)(keyz string){
 
 func recv_data(client net.Conn){
 	p("LISTEN TO recv_data")
+	reply := make([]byte, 32)
+	client.Read(reply)
+	//decode(reply)
+	fmt.Println("Message Received:", reply)
+	client.Write(reply)
+	//client.Close()
 
-	for{
-		message, _ := bufio.NewReader(client).ReadString('\n')
-		fmt.Print("Message Received:", string(message))
-		client.Write([]byte(message + "\n"))
-	}
 }
 
 func handshake(client net.Conn) {
@@ -117,3 +118,21 @@ func reject(client net.Conn) {
 	//client.Close();
 }
 
+//funker ikke
+func decode(encoded []byte) []byte{
+	key := encoded[2:6]
+	length := int(encoded[1]-128)
+	encodedMsg := encoded[5:5+length]
+	buff := make([]byte,length)
+	fmt.Println("KEY ",key)
+	fmt.Println("LENGTH",length)
+	fmt.Println("ENCODED", encoded)
+
+	for i := 0; i < length; i++ {
+		buff[i] = (encodedMsg[i] ^ key[i%4])
+	}
+
+	fmt.Println("DECODED",buff)
+
+	return buff
+}
