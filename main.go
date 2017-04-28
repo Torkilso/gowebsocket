@@ -188,9 +188,15 @@ func handler(client net.Conn) {
       if c[4:len(c)] == "1000" {
         closeConn(client)
         break
+      }else if c[4:len(c)] == "1001"{
+	      //PONG 10001010
+	      response := make([]byte,2)
+	      response[0] = byte(138)
+	      // p(fmt.Sprintf("%08b",byte(response[0])))
+	      client.Write(response)
+      }else{
+	      go handleMsg(msg)
       }
-
-      go handleMsg(msg)
     }
   }
 }
