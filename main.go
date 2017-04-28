@@ -17,7 +17,6 @@ const (
 	CONN_PORT = "3001"
 	CONN_TYPE = "tcp"
 	magic_server_key = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-  msg_length = 128
 )
 
 var p = fmt.Println
@@ -52,38 +51,36 @@ func reject(client net.Conn) {
 }
 
 //Funnet på nett
-/*
-Første byte inneholder typ beskrivelse
-Andre byte inneholder lengden på dataen fra(/til) klienten
-either two or eight bytes if the length does not fit in the second byte (the second byte is then a code saying how many bytes are used for the length)
-the actual (raw) data
- */
-func decode (rawBytes []byte) string {
-	var idxMask int
-	if rawBytes[1] == 126 {
-		idxMask = 4
-	} else if rawBytes[1] == 127 {
-		idxMask = 10
-	} else {
-		idxMask = 2
+
+func decode (inputBytes []byte) string {
+	mask := 2
+	if inputBytes[1]-128 == 126 {
+		mask = 4
+	} else if inputBytes[1]-128 == 127 {
+		mask = 10
 	}
 
-	masks := rawBytes[idxMask:idxMask + 4]
+	masks := inputBytes[mask:mask + 4]
 
-  first := 6
+  dataEnd := mask + 4
 
-  for r := range rawBytes{
-    if rawBytes[r] == 0 {
-      first = r
-      break
+  for r := mask + 4; r <= len(inputBytes); r++ {
+    if inputBytes[r] == 0 {
+      check := true
+      for t := 1; t <= 10; t++ {
+        if inputBytes[r+t] != 0 {
+          check = false
+          break
+        }
+      }
+      if check {
+        dataEnd = r
+        break
+      }
     }
   }
 
-  if first < 6 {
-    first = 6
-  }
-
-  data := rawBytes[idxMask + 4:first]
+  data := inputBytes[mask + 4:dataEnd]
 	decoded := make([]byte, len(data))
 
 	for i, b := range data {
@@ -92,41 +89,44 @@ func decode (rawBytes []byte) string {
 	return string(decoded)
 }
 
-//Ikke testet 27.04.17
 func encode (message string) (result []byte) {
-	rawBytes := []byte(message)
-	var idxData int
 
-	length := byte(len(rawBytes))
-	if len(rawBytes) <= 125 { //one byte to store data length
-		result = make([]byte, len(rawBytes)+2)
+	input := []byte(message)
+	var dataIndex int
+
+	length := byte(len(input))
+
+	if len(input) <= 125 { //one byte to store data length
+		result = make([]byte, len(input)+2)
 		result[1] = length
-		idxData = 2
-	} else if len(rawBytes) >= 126 && len(rawBytes) <= 65535 { //two bytes to store data length
-		result = make([]byte, len(rawBytes)+4)
+		dataIndex = 2
+	} else if len(input) >= 126 && len(input) <= 65535 { //two bytes to store data length
+		result = make([]byte, len(input)+4)
+
 		result[1] = 126 //extra storage needed
-		result[2] = ( length >> 8 ) & 255
-		result[3] = ( length      ) & 255
-		idxData = 4
+		result[2] = byte(len(input) >> 8)
+		result[3] = length
+
+		dataIndex = 4
 	} else {
-		result = make([]byte, len(rawBytes)+10)
+		result = make([]byte, len(input)+10)
 		result[1] = 127
-		result[2] = ( length >> 56 ) & 255
-		result[3] = ( length >> 48 ) & 255
-		result[4] = ( length >> 40 ) & 255
-		result[5] = ( length >> 32 ) & 255
-		result[6] = ( length >> 24 ) & 255
-		result[7] = ( length >> 16 ) & 255
-		result[8] = ( length >> 8 ) & 255
-		result[9] = ( length       ) & 255
-		idxData = 10
+		result[2] = byte(len(input) >> 56)
+		result[3] = byte(len(input) >> 48)
+		result[4] = byte(len(input) >> 40)
+		result[5] = byte(len(input) >> 32)
+		result[6] = byte(len(input) >> 24)
+		result[7] = byte(len(input) >> 16)
+		result[8] = byte(len(input) >> 8)
+		result[9] = length
+		dataIndex = 10
 	}
 
-	result[0] = 129 //only text is supported
+	result[0] = 129
 
-	// put raw data at the correct index
-	for i, b := range rawBytes {
-		result[idxData+i] = b
+	// put data at the correct index
+	for i, b := range input {
+		result[dataIndex+i] = b
 	}
 	return result
 }
@@ -151,15 +151,9 @@ func handshake(client net.Conn) bool {
 	}
 }
 
-func handleIncomingMsg(msg []byte, client net.Conn) {
-  c := fmt.Sprintf("%08b", byte(msg[0]))
-  if c[4:len(c)] == "1000" {
-    closeConn(client)
-  }
-
+func handleMsg(msg []byte) {
   decoded := decode(msg)
   enc := encode(decoded)
-
   writeToAll(enc)
 }
 
@@ -170,7 +164,6 @@ func writeToAll(msg []byte) {
 }
 
 func closeConn(client net.Conn) {
-
   for i := range clients {
     if clients[i] == client {
       clients = clients[:i + copy(clients[i:], clients[i+1:])]
@@ -178,9 +171,7 @@ func closeConn(client net.Conn) {
       break
     }
   }
-
   client.Close()
-
 }
 
 func handler(client net.Conn) {
@@ -190,7 +181,7 @@ func handler(client net.Conn) {
     clients = append(clients, client)
 
     for {
-      msg := make([]byte, 32)
+      msg := make([]byte, 4096)
       client.Read(msg)
 
       c := fmt.Sprintf("%08b", byte(msg[0]))
@@ -199,10 +190,7 @@ func handler(client net.Conn) {
         break
       }
 
-      decoded := decode(msg)
-      enc := encode(decoded)
-
-      writeToAll(enc)
+      go handleMsg(msg)
     }
   }
 }
@@ -234,7 +222,6 @@ func startWss() {
 }
 
 func main() {
-  fmt.Sprintf("0%8b", byte(1))
 	go startWss()
 
 	http.Handle("/", http.FileServer(http.Dir("./static")))
