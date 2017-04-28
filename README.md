@@ -8,9 +8,9 @@
 - [x] Close
 
 ### Todo
-- [ ] Større meldinger
+- [x] Større meldinger
 - [ ] Gif support
-- [ ] Ping/Pong
+- [x] Ping/Pong
 - [ ] Demo
 - [ ] Readme
 
