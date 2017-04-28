@@ -151,18 +151,6 @@ func handshake(client net.Conn) bool {
 	}
 }
 
-func handleIncomingMsg(msg []byte, client net.Conn) {
-  c := fmt.Sprintf("%08b", byte(msg[0]))
-  if c[4:len(c)] == "1000" {
-    closeConn(client)
-  }
-
-  decoded := decode(msg)
-  enc := encode(decoded)
-
-  writeToAll(enc)
-}
-
 func writeToAll(msg []byte) {
   for i := range clients {
     clients[i].Write(msg)
@@ -190,19 +178,31 @@ func handler(client net.Conn) {
     clients = append(clients, client)
 
     for {
+	    response := make([]byte, 2)
+	    mask_1 := (byte)(1 << 4)
+	    mask_2 := (byte)(1 << 5)
+	    mask_3 := (byte)(1 << 6)
+	    mask_4 := (byte)(1 << 7)
+	    response[0] |= mask_1 //set to 1
+	    response[0] &= mask_2 //set to 0
+	    response[0] |= mask_3 //set to 1
+	    response[0] &= mask_4 //set to 0
       msg := make([]byte, 32)
       client.Read(msg)
 	    c := fmt.Sprintf("%08b", byte(msg[0]))
-      select {
+      switch {
       case c[4:len(c)] == "1000":
 	      closeConn(client)
 	      break
       case c[4:len(c)] == "1001":
 	      //PONG
+
+	      client.Write(response)
       default:
 	      decoded := decode(msg)
 	      enc := encode(decoded)
-
+	      hei := fmt.Sprintf("%08b", byte(response[0]))
+	      p(hei)
 	      writeToAll(enc)
       }
     }
