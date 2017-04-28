@@ -192,17 +192,19 @@ func handler(client net.Conn) {
     for {
       msg := make([]byte, 32)
       client.Read(msg)
+	    c := fmt.Sprintf("%08b", byte(msg[0]))
+      select {
+      case c[4:len(c)] == "1000":
+	      closeConn(client)
+	      break
+      case c[4:len(c)] == "1001":
+	      //PONG
+      default:
+	      decoded := decode(msg)
+	      enc := encode(decoded)
 
-      c := fmt.Sprintf("%08b", byte(msg[0]))
-      if c[4:len(c)] == "1000" {
-        closeConn(client)
-        break
+	      writeToAll(enc)
       }
-
-      decoded := decode(msg)
-      enc := encode(decoded)
-
-      writeToAll(enc)
     }
   }
 }
