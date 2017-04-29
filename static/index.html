@@ -54,16 +54,23 @@ class Messages {
         };
 
         this.ws.onerror = (error) => {
-          $("#connection_label").html("Not connected");
+          $("#connection_label").html("Error, lost ");
+          $("#connection_alert").removeClass("alert-info");
+          $("#connection_alert").removeClass("alert-success");
+          $("#connection_alert").addClass("alert-danger");
         };
 
         this.ws.onopen = () => {
           $("#connection_label").html("Connected!");
-          $("#connection_alert").toggleClass("alert-info alert-success");
+          $("#connection_alert").removeClass("alert-info");
+          $("#connection_alert").addClass("alert-success");
         };
 
         this.ws.onclose = function(message) {
           $("#connection_label").html("Not connected");
+          $("#connection_alert").removeClass("alert-info");
+          $("#connection_alert").removeClass("alert-success");
+          $("#connection_alert").addClass("alert-danger");
         };
   }
 
@@ -87,11 +94,14 @@ $(document).ready(function(){
   });
 
   $('#send').hover((event) => {
-    $('#hide').animate({bottom:'-100px'},"fast")
+    $('#hide').stop();
+    $('#hide').animate({bottom:'-130px'},"fast");
   });
 
   $('#send').mouseleave((event) => {
-    $('#hide').animate({bottom:'-200px'}, "fast")
+
+    $('#hide').stop();
+    $('#hide').animate({bottom:'-200px'}, "fast");
   });
 });
 
@@ -117,7 +127,7 @@ $(document).ready(function(){
               <input type="text" class="form-control" id="name">
             </div>
           </div>
-          <div class="col-xs-6">
+          <div class="col-xs-8">
             <div class="form-group">
               <label for="usr">Message</label>
               <input type="text" class="form-control" id="msg">

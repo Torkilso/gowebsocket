@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"crypto/sha1"
-  //"runtime"
 )
 
 const (
@@ -20,8 +19,7 @@ const (
 )
 
 var p = fmt.Println
-
-// Handles incoming requests.
+var clients = make([]net.Conn, 0)
 
 func hand(str string)(key string){
 	h:=sha1.New()
@@ -189,7 +187,6 @@ func handler(client net.Conn) {
         closeConn(client)
         break
       }else if c[4:len(c)] == "1001"{
-	      //PONG 10001010
 	      response := make([]byte,2)
 	      response[0] = byte(138)
 	      // p(fmt.Sprintf("%08b",byte(response[0])))
@@ -200,8 +197,6 @@ func handler(client net.Conn) {
     }
   }
 }
-
-var clients = make([]net.Conn, 0)
 
 func startWss() {
 	listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
@@ -232,4 +227,7 @@ func main() {
 
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 	http.ListenAndServe(":3000", nil)
+
+
+
 }
