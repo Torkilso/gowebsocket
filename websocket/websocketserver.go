@@ -196,6 +196,11 @@ func handler(client net.Conn) {
   }
 }
 
+func Number_of_connections()int{
+	return len(clients)
+}
+
+
 func Start(CONN_HOST string, CONN_PORT string) {
 	listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 
