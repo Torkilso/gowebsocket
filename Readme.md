@@ -6,6 +6,7 @@
 - [x] Handshake
 - [x] Små tekstmeldinger
 - [x] Close
+- [x] Bibliotek
 
 ### Todo
 - [ ] Større meldinger
@@ -13,3 +14,4 @@
 - [ ] Ping/Pong
 - [ ] Demo
 - [ ] Readme
+- [ ] Testing
