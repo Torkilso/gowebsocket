@@ -1,17 +1,80 @@
 # GoWebsocket
 
-### Done
-- [x] Kommunikasjon med 1 klient
-- [x] Kommunikasjon med flere klienter
-- [x] Handshake
-- [x] Små tekstmeldinger
-- [x] Close
-- [x] Bibliotek
+## About
+`GoWebsocket` is a websocket implemented in Go
 
-### Todo
-- [ ] Større meldinger
-- [ ] Gif support
-- [ ] Ping/Pong
-- [ ] Demo
-- [ ] Readme
-- [ ] Testing
+
+## Prerequisites
+* Install `Go`
+https://golang.org/dl/
+https://golang.org/doc/install
+
+## Build
+* Download websocket and add it to your GOPATH
+  ```
+    GOPATH
+    └───src
+    	└───websocket
+    │   │   	encoding.go
+    │   │   	handshake.go
+    │   │		websocketserver.go
+    │
+    │
+	```
+
+* Import websocket in your file
+	```Go
+		package main
+    	import(
+    	...
+    	"websocket"
+        ...
+    	)
+    ```
+
+
+## Using GoWebsocket
+Create a server by calling the method *Create(host, port)*
+and start it with the method *Start()*
+
+You can access all clients connected to your socket by calling *GetClients()*
+
+Each client has a LocalAddr and a RemoteAddr which you can access
+
+*See main.go for further examples*
+
+*GO*
+```GO
+    func main(){
+        server := websocket.Create("localhost", "3001")
+        server.Start()
+
+        clients := server.GetClients()
+    }
+```
+*JAVASCRIPT*
+```javascript
+    this.ws = new WebSocket("ws://localhost:3001");
+
+
+    this.ws.onmessage =  (event) => {
+    //do stuff here
+    }
+
+    this.ws.onerror = (event) => {
+
+    }
+
+    this.ws.onopen = (event) => {
+
+    }
+
+    this.ws.onclose = (event) => {
+
+    }
+```
+
+
+
+
+
