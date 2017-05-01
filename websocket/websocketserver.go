@@ -3,206 +3,103 @@ package websocket
 import (
 	"fmt"
 	"net"
-	"net/http"
 	"os"
-	"bufio"
-	"bytes"
-	"encoding/base64"
-	"crypto/sha1"
 )
 
 const (
 	CONN_TYPE = "tcp"
-	magic_server_key = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 )
 
 var p = fmt.Println
-var clients = make([]net.Conn, 0)
 
-func encodeKey(str string)(key string){
-	h:=sha1.New()
-	h.Write([]byte(str))
-	key = base64.StdEncoding.EncodeToString(h.Sum(nil))
-	return
+type Websocketserver struct {
+	clients []net.Conn
+	CONN_HOST string
+	CONN_PORT string
 }
 
-func parseKey(client net.Conn) (code int, k string) {
-	bufReader := bufio.NewReader(client)
-	request, err := http.ReadRequest(bufReader)
-	if err != nil {
-		p(err)
-	}
-	if request.Header.Get("Upgrade") != "websocket" {
-		return http.StatusBadRequest, ""
+func (s *Websocketserver) GetClients() []net.Conn {
+	return s.clients
+}
+
+func (s *Websocketserver) PingClient(c int)  {
+	/*p("Pinging client...")
+	ping := make([]byte,128)
+	ping[0] = byte(137)
+	s.clients[c].Write(ping)
+
+	pong := make([]byte, 128)
+	s.clients[c].Read(pong)
+
+	b := fmt.Sprintf("%08b", byte(pong[0]))
+
+	if b[4:len(b)] == "1010" {
+		p("Got pong")
 	} else {
-		key := request.Header.Get("Sec-Websocket-Key")
-		return http.StatusSwitchingProtocols, key
-	}
+		p("No pong")
+	}*/
 }
 
-func reject(client net.Conn) {
-	reject := "HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\nConnection: close\r\n\r\nIncorrect request"
-	client.Write([]byte(reject))
-	client.Close();
+
+func Create(host string, port string) Websocketserver {
+	return Websocketserver{clients: make([]net.Conn, 0), CONN_HOST: host, CONN_PORT: port}
 }
 
-//Funnet på nett
-
-func decode (inputBytes []byte) string {
-	mask := 2
-	if inputBytes[1]-128 == 126 {
-		mask = 4
-	} else if inputBytes[1]-128 == 127 {
-		mask = 10
-	}
-
-	masks := inputBytes[mask:mask + 4]
-
-  dataEnd := mask + 4
-
-  for r := mask + 4; r <= len(inputBytes); r++ {
-    if inputBytes[r] == 0 {
-      check := true
-      for t := 1; t <= 10; t++ {
-        if inputBytes[r+t] != 0 {
-          check = false
-          break
-        }
-      }
-      if check {
-        dataEnd = r
-        break
-      }
-    }
-  }
-
-  data := inputBytes[mask + 4:dataEnd]
-	decoded := make([]byte, len(data))
-
-	for i, b := range data {
-		decoded[i] = b ^ masks[i % 4]
-	}
-	return string(decoded)
-}
-
-func encode (message string) (result []byte) {
-
-	input := []byte(message)
-	var dataIndex int
-
-	length := byte(len(input))
-
-	if len(input) <= 125 { //one byte to store data length
-		result = make([]byte, len(input)+2)
-		result[1] = length
-		dataIndex = 2
-	} else if len(input) >= 126 && len(input) <= 65535 { //two bytes to store data length
-		result = make([]byte, len(input)+4)
-
-		result[1] = 126 //extra storage needed
-		result[2] = byte(len(input) >> 8)
-		result[3] = length
-
-		dataIndex = 4
-	} else {
-		result = make([]byte, len(input)+10)
-		result[1] = 127
-		result[2] = byte(len(input) >> 56)
-		result[3] = byte(len(input) >> 48)
-		result[4] = byte(len(input) >> 40)
-		result[5] = byte(len(input) >> 32)
-		result[6] = byte(len(input) >> 24)
-		result[7] = byte(len(input) >> 16)
-		result[8] = byte(len(input) >> 8)
-		result[9] = length
-		dataIndex = 10
-	}
-
-	result[0] = 129
-
-	// put data at the correct index
-	for i, b := range input {
-		result[dataIndex+i] = b
-	}
-	return result
-}
-
-func handshake(client net.Conn) bool {
-	status, key := parseKey(client)
-	if status != 101 {
-		//reject
-		reject(client)
-    return false
-	} else {
-		//Complete handshake
-		var t = encodeKey(key + magic_server_key)
-		var buff bytes.Buffer
-		buff.WriteString("HTTP/1.1 101 Switching Protocols\r\n")
-		buff.WriteString("Connection: Upgrade\r\n")
-		buff.WriteString("Upgrade: websocket\r\n")
-		buff.WriteString("Sec-WebSocket-Accept:")
-		buff.WriteString(t + "\r\n\r\n")
-		client.Write(buff.Bytes())
-    return true
-	}
-}
-
-func handleMsg(msg []byte) {
+func handleMsg(msg []byte, s *Websocketserver) {
   decoded := decode(msg)
   enc := encode(decoded)
-  writeToAll(enc)
+  writeToAll(enc, s)
 }
 
-func writeToAll(msg []byte) {
-  for i := range clients {
-    clients[i].Write(msg)
+func writeToAll(msg []byte, s *Websocketserver) {
+  for i := range s.clients {
+    s.clients[i].Write(msg)
   }
 }
 
-func closeConn(client net.Conn) {
-  for i := range clients {
-    if clients[i] == client {
-      clients = clients[:i + copy(clients[i:], clients[i+1:])]
+func closeConn(client net.Conn, s *Websocketserver) {
+  for i := range s.clients {
+    if s.clients[i] == client {
+      s.clients = s.clients[:i + copy(s.clients[i:], s.clients[i+1:])]
       client.Close()
       break
     }
   }
-  client.Close()
 }
 
-func handler(client net.Conn) {
-	verified := handshake(client)
+func (s *Websocketserver) CloseClient(client int) {
+	/*s.clients[client].Close()
+	s.clients = s.clients[:client + copy(s.clients[client:], s.clients[client+1:])]
+	*/
+}
+
+func handler(client *net.Conn, s *Websocketserver) {
+	verified := handshake(*client)
   if(verified){
 
-    clients = append(clients, client)
+    s.clients = append(s.clients, *client)
 
     for {
       msg := make([]byte, 4096)
-      client.Read(msg)
-
+      (*client).Read(msg)
       c := fmt.Sprintf("%08b", byte(msg[0]))
       if c[4:len(c)] == "1000" {
-        closeConn(client)
+        closeConn(*client, s)
         break
       }else if c[4:len(c)] == "1001"{
 	      response := make([]byte,2)
 	      response[0] = byte(138)
 	      // p(fmt.Sprintf("%08b",byte(response[0])))
-	      client.Write(response)
+	      (*client).Write(response)
       }else{
-	      go handleMsg(msg)
+	      go handleMsg(msg, s)
       }
     }
   }
 }
 
-func Number_of_connections()int{
-	return len(clients)
-}
-
-
-func Start(CONN_HOST string, CONN_PORT string) {
-	listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
+func listen(s *Websocketserver){
+	listener, err := net.Listen(CONN_TYPE, s.CONN_HOST+":"+s.CONN_PORT)
 
 	if err != nil {
 		p("Error listening:", err.Error())
@@ -211,7 +108,7 @@ func Start(CONN_HOST string, CONN_PORT string) {
 	//Executed when the application closes.
 	defer listener.Close()
 
-	p("Listening on " + CONN_HOST + ":" + CONN_PORT)
+	p("Listening on " + s.CONN_HOST + ":" + s.CONN_PORT)
 
 	for {
 		// Listen for an incoming connection.
@@ -221,6 +118,10 @@ func Start(CONN_HOST string, CONN_PORT string) {
 			os.Exit(1)
 		}
 		// Handle connections in a new thread (goroutine)
-		go handler(conn)
+		go handler(&conn, s)
 	}
+}
+
+func (s *Websocketserver)Start() {
+	go listen(s)
 }
