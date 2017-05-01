@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"websocket"
+	"./websocket"
 	"bufio"
 	"os"
 	"runtime"
