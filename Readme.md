@@ -26,8 +26,7 @@ https://golang.org/doc/install
 * Alternatively you can download GoWebsocket and add it to your GOPATH manually
  
  *Make sure your GOPATH looks something like this* 
-  
-  ```
+   ```
     GOPATH
     └───src
     	└───websocket
@@ -39,15 +38,14 @@ https://golang.org/doc/install
   ```
 
  then import websocket in your file
-	
-	```Go
-		package main
-		import(
-		...
-		"websocket"
-		...
-		)
-    	```
+ ```GO
+    	package main
+   	import(
+    		...
+      		"websocket"
+        	...
+   	 )
+```
 
 
 ## Using GoWebsocket
