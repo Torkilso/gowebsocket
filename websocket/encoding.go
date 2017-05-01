@@ -1,5 +1,8 @@
 package websocket
 
+/*
+ * Decodes an incoming message
+ */
 func decode (inputBytes []byte) string {
 	mask := 2
 	if inputBytes[1]-128 == 126 {
@@ -11,6 +14,7 @@ func decode (inputBytes []byte) string {
 	masks := inputBytes[mask:mask + 4]
 
   dataEnd := mask + 4
+
 
   for r := mask + 4; r <= len(inputBytes); r++ {
     if inputBytes[r] == 0 {
@@ -37,6 +41,9 @@ func decode (inputBytes []byte) string {
 	return string(decoded)
 }
 
+/*
+ * Encodes a decoded message
+ */
 func encode (message string) (result []byte) {
 
 	input := []byte(message)
@@ -44,14 +51,14 @@ func encode (message string) (result []byte) {
 
 	length := byte(len(input))
 
-	if len(input) <= 125 { //one byte to store data length
+	if len(input) <= 125 {
 		result = make([]byte, len(input)+2)
 		result[1] = length
 		dataIndex = 2
-	} else if len(input) >= 126 && len(input) <= 65535 { //two bytes to store data length
+	} else if len(input) >= 126 && len(input) <= 65535 {
 		result = make([]byte, len(input)+4)
 
-		result[1] = 126 //extra storage needed
+		result[1] = 126
 		result[2] = byte(len(input) >> 8)
 		result[3] = length
 

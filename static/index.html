@@ -45,8 +45,6 @@ class Messages {
           var jsonm=JSON.parse(event.data);
           console.log(jsonm)
 
-
-
           var bef = $('#chatbox').html();
           var newMsg = "<strong>" + jsonm.name + "</strong>: " + jsonm.msg + "<br />"
           $('#chatbox').html(bef + newMsg);
