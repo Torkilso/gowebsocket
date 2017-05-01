@@ -14,7 +14,7 @@ https://golang.org/doc/install
 	```sh
     	go get github.com/TorkilSo/gowebsocket
     ```
-	to use GoWebsocket you only need to import it to your file
+	then import GoWebsocket to your file
     ```GO
     package main
     import(
@@ -24,7 +24,9 @@ https://golang.org/doc/install
     )
     ```
 * Alternatively you can download GoWebsocket and add it to your GOPATH manually
-  Make sure your *GOPATH* looks something like this 
+ 
+ *Make sure your GOPATH looks something like this* 
+  
   ```
     GOPATH
     └───src
@@ -34,17 +36,18 @@ https://golang.org/doc/install
     │   │		websocketserver.go
     │
     │
-	```
+  ```
 
  then import websocket in your file
+	
 	```Go
 		package main
-    	import(
-    	...
-    	"websocket"
-        ...
-    	)
-    ```
+		import(
+		...
+		"websocket"
+		...
+		)
+    	```
 
 
 ## Using GoWebsocket
