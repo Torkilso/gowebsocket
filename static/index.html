@@ -41,9 +41,9 @@ class Messages {
         this.ws = new WebSocket("ws://localhost:3001");
 
         this.ws.onmessage = (event) => {
-          console.log(event)
+          //console.log(event)
           var jsonm=JSON.parse(event.data);
-          console.log(jsonm)
+          //console.log(jsonm)
 
           var bef = $('#chatbox').html();
           var newMsg = "<strong>" + jsonm.name + "</strong>: " + jsonm.msg + "<br />"
@@ -79,6 +79,8 @@ class Messages {
       var obj = {'name':name, 'msg':msg};
 
       this.ws.send(JSON.stringify(obj));
+
+      $('#msg').val('');
   }
 }
 
@@ -101,6 +103,12 @@ $(document).ready(function(){
     $('#hide').stop();
     $('#hide').animate({bottom:'-200px'}, "fast");
   });
+
+  $(document).keypress(function(event){
+    if(event.which == 13) {
+        messages.on_send(event);
+      }
+});
 });
 
     </script>
