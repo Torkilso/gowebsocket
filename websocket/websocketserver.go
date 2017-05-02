@@ -24,29 +24,12 @@ type Websocketserver struct {
 	OnClose fn_c
 }
 
+/*
+ * Types for functions in the Websocketserver struct
+ */
 type fn_b func([]byte, net.Conn)
 type fn_c func(net.Conn)
 type fn_e func(string)
-
-// PingClient() does not work
-//
-/*func (s *Websocketserver) PingClient(c int)  {
-	p("Pinging client...")
-	ping := make([]byte,128)
-	ping[0] = byte(137)
-	s.clients[c].Write(ping)
-
-	pong := make([]byte, 128)
-	s.clients[c].Read(pong)
-
-	b := fmt.Sprintf("%08b", byte(pong[0]))
-
-	if b[4:len(b)] == "1010" {
-		p("Got pong")
-	} else {
-		p("No pong")
-	}
-}*/
 
 /*
  * Returns a new Websocketserver struct
@@ -62,17 +45,26 @@ func (s *Websocketserver) GetClients() []net.Conn {
 	return s.clients
 }
 
+/*
+ * Send message to client client, input in byteslice
+ */
 func (s *Websocketserver) Send(msg []byte, client net.Conn){
 	decoded := decode(msg)
 	enc := encode(decoded)
 	client.Write(enc)
 }
 
+/*
+ * Send message to one client, input in string
+ */
 func (s *Websocketserver) SendString(msg string, client net.Conn){
 	enc := encode(msg)
 	client.Write(enc)
 }
 
+/*
+ * Send message to all connected clients, input in string
+ */
 func (s *Websocketserver) SendStringToAll(msg string){
 	enc := encode(msg)
 	for i := range s.clients {
@@ -81,7 +73,7 @@ func (s *Websocketserver) SendStringToAll(msg string){
 }
 
 /*
- * Writes incoming message to all connections to a Websocketserver struct
+ * Send message to all connected clients, input in byteslice
  */
 func (s *Websocketserver) SendToAll(msg []byte) {
 	decoded := decode(msg)
@@ -91,14 +83,23 @@ func (s *Websocketserver) SendToAll(msg []byte) {
   }
 }
 
+/*
+ * Returns latest message recieved from all clients
+ */
 func (s *Websocketserver) GetLatestMsg() []byte {
 	return s.latestMsg
 }
 
+/*
+ * Returns latest client connected
+ */
 func (s *Websocketserver) GetLatestClient() net.Conn {
 	return s.latestClient
 }
 
+/*
+ * Decodes message in byteslice to string
+ */
 func (s *Websocketserver) ToString(msg []byte) string {
 	return decode(msg)
 }
@@ -130,6 +131,23 @@ func closeConn(client net.Conn, s *Websocketserver) {
 }
 
 /*
+ * Removes client from clientslice in Websocketserver struct when error is read from the handler
+ */
+func closeConnErr(client net.Conn, s *Websocketserver) {
+  for i := range s.clients {
+    if s.clients[i] == client {
+
+			//Remove the client from the Websocketserver slice
+      s.clients = s.clients[:i + copy(s.clients[i:], s.clients[i+1:])]
+
+			//Runs OnClose() specified by user of library
+			go s.OnClose(client)
+      break
+    }
+  }
+}
+
+/*
  * Handles incoming messages from a client.
  * Each client has a handler running in a seperate goroutine
  */
@@ -149,7 +167,12 @@ func handler(client *net.Conn, s *Websocketserver) {
       msg := make([]byte, 4096)
 
 			//Waits for incoming message
-      (*client).Read(msg)
+      length, err_r := (*client).Read(msg)
+			//Check for errors
+			if err_r != nil {
+				closeConnErr(*client,s)
+				break
+			}
 
 			//Extract the first byte to find opcode
       c := fmt.Sprintf("%08b", byte(msg[0]))
@@ -171,7 +194,7 @@ func handler(client *net.Conn, s *Websocketserver) {
 				//Handle message in a new goroutine
 	      //go handleMsg(msg, s)
 				s.latestMsg = msg
-				go s.OnRecieve(msg, *client);
+				go s.OnRecieve(msg[:length], *client);
       }
     }
   }

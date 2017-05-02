@@ -13,26 +13,7 @@ func decode (inputBytes []byte) string {
 
 	masks := inputBytes[mask:mask + 4]
 
-  dataEnd := mask + 4
-
-
-  for r := mask + 4; r <= len(inputBytes); r++ {
-    if inputBytes[r] == 0 {
-      check := true
-      for t := 1; t <= 10; t++ {
-        if inputBytes[r+t] != 0 {
-          check = false
-          break
-        }
-      }
-      if check {
-        dataEnd = r
-        break
-      }
-    }
-  }
-
-  data := inputBytes[mask + 4:dataEnd]
+  data := inputBytes[mask + 4:len(inputBytes)]
 	decoded := make([]byte, len(data))
 
 	for i, b := range data {

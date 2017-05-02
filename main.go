@@ -3,13 +3,12 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"github.com/TorkilSo/gowebsocket/websocket"
+	"websocket"
 	"bufio"
 	"os"
 	"runtime"
 	"strings"
 	"net"
-	//"strconv"
 )
 
 var p = fmt.Println
