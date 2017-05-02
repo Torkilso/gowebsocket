@@ -16,7 +16,15 @@ type Websocketserver struct {
 	clients []net.Conn
 	CONN_HOST string
 	CONN_PORT string
+	LatestMsg []byte
+	LatestClient net.Conn
+	OnRecieve fn
+	OnError fn
+	OnOpen fn
+	OnClose fn
 }
+
+type fn func()
 
 /*
  * Returns all the clients for a Websocketserver struct
@@ -24,6 +32,8 @@ type Websocketserver struct {
 func (s *Websocketserver) GetClients() []net.Conn {
 	return s.clients
 }
+
+
 
 // PingClient() does not work
 //
@@ -49,25 +59,21 @@ func (s *Websocketserver) GetClients() []net.Conn {
  * Returns a new Websocketserver struct
  */
 func Create(host string, port string) Websocketserver {
-	return Websocketserver{clients: make([]net.Conn, 0), CONN_HOST: host, CONN_PORT: port}
+	return Websocketserver{clients: make([]net.Conn, 0), CONN_HOST: host, CONN_PORT: port, OnRecieve: func(){}, OnOpen: func(){}, OnClose: func(){}, OnError: func(){}}
 }
 
-/*
- * Decodes and encodes incoming data with encoding.go.
- * Writes the encoded message to all connections.
- */
-func handleMsg(msg []byte, s *Websocketserver) {
-  decoded := decode(msg)
-  enc := encode(decoded)
-  writeToAll(enc, s)
+func Send(){
+
 }
 
 /*
  * Writes incoming message to all connections to a Websocketserver struct
  */
-func writeToAll(msg []byte, s *Websocketserver) {
+func (s *Websocketserver) WriteToAll(msg []byte) {
+	decoded := decode(msg)
+	enc := encode(decoded)
   for i := range s.clients {
-    s.clients[i].Write(msg)
+    s.clients[i].Write(enc)
   }
 }
 
@@ -95,10 +101,12 @@ func closeConn(client net.Conn, s *Websocketserver) {
  */
 func handler(client *net.Conn, s *Websocketserver) {
 	verified := handshake(*client)
-  if(verified){
+	if(verified){
 
 		//Add client to slice in Websocketserver
     s.clients = append(s.clients, *client)
+
+		go s.OnOpen()
 
 		//Listen for incoming messages
     for {
@@ -113,6 +121,7 @@ func handler(client *net.Conn, s *Websocketserver) {
 
 			//If client sent close
       if c[4:len(c)] == "1000" {
+				go s.OnClose()
         closeConn(*client, s)
         break
 
@@ -126,7 +135,11 @@ func handler(client *net.Conn, s *Websocketserver) {
 	      (*client).Write(response)
       }else{
 				//Handle message in a new goroutine
-	      go handleMsg(msg, s)
+	      //go handleMsg(msg, s)
+				s.LatestMsg = msg
+				s.LatestClient = *client
+				go s.OnRecieve();
+
       }
     }
   }
@@ -154,11 +167,14 @@ func listen(s *Websocketserver){
 		// Listen for an incoming connection.
 		conn, err := listener.Accept()
 		if err != nil {
+			go s.OnError()
 			p("Error accepting: ", err.Error())
 			os.Exit(1)
 		}
 
 		// Handle connections in a new thread (goroutine)
+		//s.latestClient = conn
+		//go s.OnOpen()
 		go handler(&conn, s)
 	}
 }
