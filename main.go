@@ -50,7 +50,7 @@ func main() {
 	server := websocket.Create("localhost", "3001")
 
 	server.OnRecieve = func ()  {
-		server.WriteToAll(server.LatestMsg)
+		server.SendToAll(server.GetLatestMsg())
 	}
 
 	server.OnOpen = func ()  {

@@ -16,8 +16,8 @@ type Websocketserver struct {
 	clients []net.Conn
 	CONN_HOST string
 	CONN_PORT string
-	LatestMsg []byte
-	LatestClient net.Conn
+	latestMsg []byte
+	latestClient net.Conn
 	OnRecieve fn
 	OnError fn
 	OnOpen fn
@@ -25,15 +25,6 @@ type Websocketserver struct {
 }
 
 type fn func()
-
-/*
- * Returns all the clients for a Websocketserver struct
- */
-func (s *Websocketserver) GetClients() []net.Conn {
-	return s.clients
-}
-
-
 
 // PingClient() does not work
 //
@@ -62,19 +53,42 @@ func Create(host string, port string) Websocketserver {
 	return Websocketserver{clients: make([]net.Conn, 0), CONN_HOST: host, CONN_PORT: port, OnRecieve: func(){}, OnOpen: func(){}, OnClose: func(){}, OnError: func(){}}
 }
 
-func Send(){
+/*
+ * Returns all the clients for a Websocketserver struct
+ */
+func (s *Websocketserver) GetClients() []net.Conn {
+	return s.clients
+}
 
+func (s *Websocketserver) Send(msg []byte, client net.Conn){
+	decoded := decode(msg)
+	enc := encode(decoded)
+	client.Write(enc)
 }
 
 /*
  * Writes incoming message to all connections to a Websocketserver struct
  */
-func (s *Websocketserver) WriteToAll(msg []byte) {
+func (s *Websocketserver) SendToAll(msg []byte) {
 	decoded := decode(msg)
 	enc := encode(decoded)
   for i := range s.clients {
     s.clients[i].Write(enc)
   }
+}
+
+func (s *Websocketserver) GetLatestMsg() []byte {
+	return s.latestMsg
+}
+func (s *Websocketserver) GetLatestClient() net.Conn {
+	return s.latestClient
+}
+
+/*
+ * Starts the listener in a new goroutine
+ */
+func (s *Websocketserver)Start() {
+	go listen(s)
 }
 
 /*
@@ -108,6 +122,7 @@ func handler(client *net.Conn, s *Websocketserver) {
 
 		go s.OnOpen()
 
+		s.latestClient = *client
 		//Listen for incoming messages
     for {
 			//4KB buffer
@@ -136,8 +151,8 @@ func handler(client *net.Conn, s *Websocketserver) {
       }else{
 				//Handle message in a new goroutine
 	      //go handleMsg(msg, s)
-				s.LatestMsg = msg
-				s.LatestClient = *client
+				s.latestMsg = msg
+				s.latestClient = *client
 				go s.OnRecieve();
 
       }
@@ -153,6 +168,7 @@ func listen(s *Websocketserver){
 	listener, err := net.Listen(CONN_TYPE, s.CONN_HOST+":"+s.CONN_PORT)
 
 	if err != nil {
+		s.OnError()
 		p("Error listening:", err.Error())
 		os.Exit(1)
 	}
@@ -173,15 +189,6 @@ func listen(s *Websocketserver){
 		}
 
 		// Handle connections in a new thread (goroutine)
-		//s.latestClient = conn
-		//go s.OnOpen()
 		go handler(&conn, s)
 	}
-}
-
-/*
- * Starts the listener in a new goroutine
- */
-func (s *Websocketserver)Start() {
-	go listen(s)
 }
