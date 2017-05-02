@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"github.com/TorkilSo/gowebsocket/websocket"
+	"websocket"
 	"bufio"
 	"os"
 	"runtime"
@@ -43,13 +43,32 @@ func serverInterface(s *websocket.Websocketserver)  {
 }
 
 
+
 func main() {
 
 	//Creates a websocketserver "object"
 	server := websocket.Create("localhost", "3001")
 
+	server.OnRecieve = func ()  {
+		server.WriteToAll(server.LatestMsg)
+	}
+
+	server.OnOpen = func ()  {
+		p("New conn")
+	}
+
+	server.OnClose = func ()  {
+		p("conn closed")
+	}
+
+	server.OnError = func ()  {
+		p("err")
+	}
+
 	//Start the server
 	server.Start()
+
+
 
 	go serverInterface(&server)
 
