@@ -58,16 +58,40 @@ Each client has a LocalAddr and a RemoteAddr which you can access
 
 *See main.go for further examples*
 
-*GO*
+*Example backend GO*
 ```GO
     func main(){
         server := websocket.Create("localhost", "3001")
         server.Start()
 
         clients := server.GetClients()
+	
+	
+	server.onReceive = func(msg[]byte, client net.Conn){
+		//do stuff with message and/or client
+		//for example send messeage to all clients
+		server.SendToAll(msg) 
+		//or to specific client
+		server.send(msg,client)
+	}
+	
+	server.onOpen = func(client net.Conn){
+		//do stuff on connection 
+		//for example closing connection
+		client.close()
+	}
+	
+	server.onClose = func(client net.Conn){
+		//do stuff on closing connection
+		server.Send_string("Goodbye")
+	}
+	
+	server.onError = func(err string){
+		//something something error handling
+	}
     }
 ```
-*JAVASCRIPT*
+*Example frontend JAVASCRIPT*
 ```javascript
     this.ws = new WebSocket("ws://localhost:3001");
 
@@ -88,8 +112,26 @@ Each client has a LocalAddr and a RemoteAddr which you can access
 
     }
 ```
-
-
-
-
+### methods 
+<dl>
+<dt><strong>Create(host,port)</strong></dt>
+<dd>Creates an instance of GoWebsocket on the specified host and port</dd>
+<dt><strong>Start()</strong></dt>
+<dd>Websocket starts listening </dd>
+<dt><strong>SendString(string,net.Conn)</strong></dt>
+<dd>Sends given string to specified client </dd>
+<dt><strong>SendStringAsJSON(string,net.Conn)</strong></dt>
+<dd>Sends given string in the format {"msg":msg} to specified client</dd>
+<dt><strong>SendStringToAll(string)</strong></dt>
+<dd>Sends given string to all clients on websocket</dd>
+<dt><strong>SendStringToAllAsJSON(string)</strong></dt>
+<dd>Sends given string in the format {"msg":msg} to all clients on websocket</dd>
+<dt><strong>GetLatestMsg()</strong></dt>
+<dd>returns the latest message sent over websocket</dd>
+<dt><strong>GetLatestCLient()</strong></dt>
+<dd>returns the latest client connected to the websocket</dd>
+<dt><strong>ToString([]byte)</strong></dt>
+<dd>converts byte-array to string 
+</dd>
+</dl>
 
