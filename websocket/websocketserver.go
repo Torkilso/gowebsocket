@@ -63,10 +63,30 @@ func (s *Websocketserver) SendString(msg string, client net.Conn){
 }
 
 /*
+ * Send message to one client in the format {"msg":msg}, input in string
+ */
+func (s *Websocketserver) SendStringAsJSON(msg string, client net.Conn){
+	msg_f := "{\"msg\":\"" + msg + "\"}"
+	enc := encode(msg_f)
+	client.Write(enc)
+}
+
+/*
  * Send message to all connected clients, input in string
  */
 func (s *Websocketserver) SendStringToAll(msg string){
 	enc := encode(msg)
+	for i := range s.clients {
+		s.clients[i].Write(enc)
+	}
+}
+
+/*
+ * Send message to all connected clients in the format {"msg":msg}, input in string
+ */
+func (s *Websocketserver) SendStringToAllAsJSON(msg string){
+	msg_f := "{\"msg\":\"" + msg + "\"}"
+	enc := encode(msg_f)
 	for i := range s.clients {
 		s.clients[i].Write(enc)
 	}

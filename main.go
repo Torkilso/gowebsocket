@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"websocket"
+	"github/TorkilSo/gowebsocket/websocket"
 	"bufio"
 	"os"
 	"runtime"
