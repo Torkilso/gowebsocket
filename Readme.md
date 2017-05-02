@@ -59,6 +59,8 @@ Each client has a LocalAddr and a RemoteAddr which you can access
 *See main.go for further examples*
 
 *Example backend GO*
+
+*Parameters for OnRecieve, OnOpen, OnClose and OnError needs to be as shown in this example*
 ```GO
     func main(){
         server := websocket.Create("localhost", "3001")
@@ -67,7 +69,7 @@ Each client has a LocalAddr and a RemoteAddr which you can access
         clients := server.GetClients()
 	
 	
-	server.onReceive = func(msg[]byte, client net.Conn){
+	server.OnReceive = func(msg[]byte, client net.Conn){
 		//do stuff with message and/or client
 		//for example send messeage to all clients
 		server.SendToAll(msg) 
@@ -75,18 +77,18 @@ Each client has a LocalAddr and a RemoteAddr which you can access
 		server.send(msg,client)
 	}
 	
-	server.onOpen = func(client net.Conn){
+	server.OnOpen = func(client net.Conn){
 		//do stuff on connection 
 		//for example closing connection
 		client.close()
 	}
 	
-	server.onClose = func(client net.Conn){
+	server.OnClose = func(client net.Conn){
 		//do stuff on closing connection
 		server.Send_string("Goodbye")
 	}
 	
-	server.onError = func(err string){
+	server.OnError = func(err string){
 		//something something error handling
 	}
     }
