@@ -18,13 +18,15 @@ type Websocketserver struct {
 	CONN_PORT string
 	latestMsg []byte
 	latestClient net.Conn
-	OnRecieve fn
-	OnError fn
-	OnOpen fn
-	OnClose fn
+	OnRecieve fn_b
+	OnError fn_e
+	OnOpen fn_c
+	OnClose fn_c
 }
 
-type fn func()
+type fn_b func([]byte, net.Conn)
+type fn_c func(net.Conn)
+type fn_e func(string)
 
 // PingClient() does not work
 //
@@ -50,7 +52,7 @@ type fn func()
  * Returns a new Websocketserver struct
  */
 func Create(host string, port string) Websocketserver {
-	return Websocketserver{clients: make([]net.Conn, 0), CONN_HOST: host, CONN_PORT: port, OnRecieve: func(){}, OnOpen: func(){}, OnClose: func(){}, OnError: func(){}}
+	return Websocketserver{clients: make([]net.Conn, 0), CONN_HOST: host, CONN_PORT: port, OnRecieve: func(a []byte, b net.Conn){}, OnOpen: func(c net.Conn){}, OnClose: func(c net.Conn){}, OnError: func(err string){}}
 }
 
 /*
@@ -64,6 +66,18 @@ func (s *Websocketserver) Send(msg []byte, client net.Conn){
 	decoded := decode(msg)
 	enc := encode(decoded)
 	client.Write(enc)
+}
+
+func (s *Websocketserver) SendString(msg string, client net.Conn){
+	enc := encode(msg)
+	client.Write(enc)
+}
+
+func (s *Websocketserver) SendStringToAll(msg string){
+	enc := encode(msg)
+	for i := range s.clients {
+		s.clients[i].Write(enc)
+	}
 }
 
 /*
@@ -80,8 +94,13 @@ func (s *Websocketserver) SendToAll(msg []byte) {
 func (s *Websocketserver) GetLatestMsg() []byte {
 	return s.latestMsg
 }
+
 func (s *Websocketserver) GetLatestClient() net.Conn {
 	return s.latestClient
+}
+
+func (s *Websocketserver) ToString(msg []byte) string {
+	return decode(msg)
 }
 
 /*
@@ -104,6 +123,7 @@ func closeConn(client net.Conn, s *Websocketserver) {
 
 			//Closes the connection
       client.Close()
+			go s.OnClose(client)
       break
     }
   }
@@ -120,9 +140,9 @@ func handler(client *net.Conn, s *Websocketserver) {
 		//Add client to slice in Websocketserver
     s.clients = append(s.clients, *client)
 
-		go s.OnOpen()
-
+		go s.OnOpen(*client)
 		s.latestClient = *client
+
 		//Listen for incoming messages
     for {
 			//4KB buffer
@@ -136,7 +156,6 @@ func handler(client *net.Conn, s *Websocketserver) {
 
 			//If client sent close
       if c[4:len(c)] == "1000" {
-				go s.OnClose()
         closeConn(*client, s)
         break
 
@@ -152,9 +171,7 @@ func handler(client *net.Conn, s *Websocketserver) {
 				//Handle message in a new goroutine
 	      //go handleMsg(msg, s)
 				s.latestMsg = msg
-				s.latestClient = *client
-				go s.OnRecieve();
-
+				go s.OnRecieve(msg, *client);
       }
     }
   }
@@ -168,7 +185,7 @@ func listen(s *Websocketserver){
 	listener, err := net.Listen(CONN_TYPE, s.CONN_HOST+":"+s.CONN_PORT)
 
 	if err != nil {
-		s.OnError()
+		s.OnError(err.Error())
 		p("Error listening:", err.Error())
 		os.Exit(1)
 	}
@@ -183,7 +200,7 @@ func listen(s *Websocketserver){
 		// Listen for an incoming connection.
 		conn, err := listener.Accept()
 		if err != nil {
-			go s.OnError()
+			go s.OnError(err.Error())
 			p("Error accepting: ", err.Error())
 			os.Exit(1)
 		}

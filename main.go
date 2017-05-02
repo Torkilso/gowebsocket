@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"net"
 	//"strconv"
 )
 
@@ -49,26 +50,25 @@ func main() {
 	//Creates a websocketserver "object"
 	server := websocket.Create("localhost", "3001")
 
-	server.OnRecieve = func ()  {
-		server.SendToAll(server.GetLatestMsg())
+	server.OnRecieve = func (msg []byte, client net.Conn)  {
+		p("New message: ", server.ToString(msg))
+		server.SendToAll(msg)
 	}
 
-	server.OnOpen = func ()  {
-		p("New conn")
+	server.OnOpen = func (client net.Conn)  {
+		p("New connection!\nRemote address: ", client.RemoteAddr().String(), "Local address: ", client.LocalAddr().String())
 	}
 
-	server.OnClose = func ()  {
-		p("conn closed")
+	server.OnClose = func (client net.Conn)  {
+		p("Client closed!\nRemote address: ", client.RemoteAddr().String(), "Local address: ", client.LocalAddr().String())
 	}
 
-	server.OnError = func ()  {
-		p("err")
+	server.OnError = func (err string)  {
+		p(err)
 	}
 
 	//Start the server
 	server.Start()
-
-
 
 	go serverInterface(&server)
 
