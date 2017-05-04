@@ -10,7 +10,7 @@ https://golang.org/dl/
 https://golang.org/doc/install
 
 ## Build
-* Download GoWebsocket to your GOPATH
+* Download GoWebsocket to your GOPATH:
 	```sh
     	go get github.com/TorkilSo/gowebsocket
     ```
@@ -25,7 +25,7 @@ https://golang.org/doc/install
     ```
 * Alternatively you can download GoWebsocket and add it to your GOPATH manually
  
- *Make sure your GOPATH looks something like this* 
+ *Make sure your GOPATH looks something like this:* 
    ```
     GOPATH
     └───src
@@ -37,7 +37,7 @@ https://golang.org/doc/install
     │
   ```
 
- then import websocket in your file
+ then import websocket in your file:
  ```GO
     	package main
    	import(
@@ -49,16 +49,16 @@ https://golang.org/doc/install
 
 
 ## Using GoWebsocket
-Create a server by calling the method *Create(host, port)*
-and start it with the method *Start()*
+Create a server by calling the method *Create(host, port)*,
+and start it with the method *Start().*
 
-You can access all clients connected to your socket by calling *GetClients()*
+You can access all clients connected to your socket by calling *GetClients()*.
 
-Each client has a LocalAddr and a RemoteAddr which you can access
+Each client has a local and remote address which you can access with client.LocalAddr() and client.RemoteAddr().
 
 *See main.go for further examples*
 
-*Example backend GO*
+*Example backend GO:*
 
 *Parameters for OnRecieve, OnOpen, OnClose and OnError needs to be as shown in this example*
 ```GO
@@ -93,7 +93,7 @@ Each client has a LocalAddr and a RemoteAddr which you can access
 	}
     }
 ```
-*Example frontend JAVASCRIPT*
+*Example frontend Javascript:*
 ```javascript
     this.ws = new WebSocket("ws://localhost:3001");
 
@@ -114,7 +114,7 @@ Each client has a LocalAddr and a RemoteAddr which you can access
 
     }
 ```
-### methods 
+### Methods 
 <dl>
 <dt><strong>Create(host,port)</strong></dt>
 <dd>Creates an instance of GoWebsocket on the specified host and port</dd>
