@@ -10,7 +10,7 @@ https://golang.org/dl/
 https://golang.org/doc/install
 
 ## Build
-* Download GoWebsocket to your GOPATH
+* Download GoWebsocket to your GOPATH:
 	```sh
     	go get github.com/TorkilSo/gowebsocket
     ```
@@ -25,7 +25,7 @@ https://golang.org/doc/install
     ```
 * Alternatively you can download GoWebsocket and add it to your GOPATH manually
  
- *Make sure your GOPATH looks something like this* 
+ *Make sure your GOPATH looks something like this:* 
    ```
     GOPATH
     └───src
@@ -37,7 +37,7 @@ https://golang.org/doc/install
     │
   ```
 
- then import websocket in your file
+ then import websocket in your file:
  ```GO
     	package main
    	import(
@@ -49,25 +49,51 @@ https://golang.org/doc/install
 
 
 ## Using GoWebsocket
-Create a server by calling the method *Create(host, port)*
-and start it with the method *Start()*
+Create a server by calling the method *Create(host, port)*,
+and start it with the method *Start().*
 
-You can access all clients connected to your socket by calling *GetClients()*
+You can access all clients connected to your socket by calling *GetClients()*.
 
-Each client has a LocalAddr and a RemoteAddr which you can access
+Each client has a local and remote address which you can access with client.LocalAddr() and client.RemoteAddr().
 
 *See main.go for further examples*
 
-*GO*
+*Example backend GO:*
+
+*Parameters for OnRecieve, OnOpen, OnClose and OnError needs to be as shown in this example*
 ```GO
     func main(){
         server := websocket.Create("localhost", "3001")
         server.Start()
 
         clients := server.GetClients()
+	
+	
+	server.OnReceive = func(msg[]byte, client net.Conn){
+		//do stuff with message and/or client
+		//for example send messeage to all clients
+		server.SendToAll(msg) 
+		//or to specific client
+		server.send(msg,client)
+	}
+	
+	server.OnOpen = func(client net.Conn){
+		//do stuff on connection 
+		//for example closing connection
+		client.close()
+	}
+	
+	server.OnClose = func(client net.Conn){
+		//do stuff on closing connection
+		server.Send_string("Goodbye")
+	}
+	
+	server.OnError = func(err string){
+		//something something error handling
+	}
     }
 ```
-*JAVASCRIPT*
+*Example frontend Javascript:*
 ```javascript
     this.ws = new WebSocket("ws://localhost:3001");
 
@@ -88,8 +114,26 @@ Each client has a LocalAddr and a RemoteAddr which you can access
 
     }
 ```
-
-
-
-
+### Methods 
+<dl>
+<dt><strong>Create(host,port)</strong></dt>
+<dd>Creates an instance of GoWebsocket on the specified host and port</dd>
+<dt><strong>Start()</strong></dt>
+<dd>Websocket starts listening </dd>
+<dt><strong>SendString(string,net.Conn)</strong></dt>
+<dd>Sends given string to specified client </dd>
+<dt><strong>SendStringAsJSON(string,net.Conn)</strong></dt>
+<dd>Sends given string in the format {"msg":msg} to specified client</dd>
+<dt><strong>SendStringToAll(string)</strong></dt>
+<dd>Sends given string to all clients on websocket</dd>
+<dt><strong>SendStringToAllAsJSON(string)</strong></dt>
+<dd>Sends given string in the format {"msg":msg} to all clients on websocket</dd>
+<dt><strong>GetLatestMsg()</strong></dt>
+<dd>returns the latest message sent over websocket</dd>
+<dt><strong>GetLatestCLient()</strong></dt>
+<dd>returns the latest client connected to the websocket</dd>
+<dt><strong>ToString([]byte)</strong></dt>
+<dd>converts byte-array to string 
+</dd>
+</dl>
 
