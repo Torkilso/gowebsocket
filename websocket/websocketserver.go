@@ -190,6 +190,7 @@ func handler(client *net.Conn, s *Websocketserver) {
       length, err_r := (*client).Read(msg)
 			//Check for errors
 			if err_r != nil {
+				go s.OnError(err_r.Error())
 				closeConnErr(*client,s)
 				break
 			}
@@ -244,11 +245,11 @@ func listen(s *Websocketserver){
 		conn, err := listener.Accept()
 		if err != nil {
 			go s.OnError(err.Error())
-			p("Error accepting: ", err.Error())
-			os.Exit(1)
+			//p("Error accepting: ", err.Error())
+			//os.Exit(1)
+		} else {
+			// Handle connections in a new thread (goroutine)
+			go handler(&conn, s)
 		}
-
-		// Handle connections in a new thread (goroutine)
-		go handler(&conn, s)
 	}
 }
