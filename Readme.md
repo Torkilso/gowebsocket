@@ -65,9 +65,6 @@ Each client has a local and remote address which you can access with client.Loca
     func main(){
         server := websocket.Create("localhost", "3001")
         server.Start()
-
-        clients := server.GetClients()
-	
 	
 	server.OnReceive = func(msg[]byte, client net.Conn){
 		//do stuff with message and/or client
